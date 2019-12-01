@@ -2,6 +2,13 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <Copyright>Copyright © 2019</Copyright>
+    <Version>0.0.1.0</Version>
+    <Authors>Scott L Carter</Authors>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/scottctr/NSimpleTester</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/scottctr/NSimpleTester</RepositoryUrl>
+    <PackageTags>.net unit testing</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
