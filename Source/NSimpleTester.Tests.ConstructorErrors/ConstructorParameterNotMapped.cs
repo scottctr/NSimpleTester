@@ -14,16 +14,16 @@
 // WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
 // SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endregion
-using System;
-
-namespace NSimpleTester
+namespace NSimpleTester.Tests.ConstructorErrors
 {
-    public interface ITypeFactory
+    public class ConstructorParameterNotMapped
     {
-        bool CanCreateInstance(Type type);
+        public ConstructorParameterNotMapped()
+        { }
 
-        object CreateRandomValue(Type type);
+        public ConstructorParameterNotMapped(string badSetterProperty)
+        { }
 
-        void CreateDualInstances(Type type, out object instance1, out object instance2);
+        public string BadSetterProperty { get; set; }
     }
 }

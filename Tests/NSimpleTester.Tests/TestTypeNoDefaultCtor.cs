@@ -14,16 +14,17 @@
 // WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
 // SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endregion
-using System;
-
-namespace NSimpleTester
+namespace NSimpleTester.Tests
 {
-    public interface ITypeFactory
+    public class TestTypeNoDefaultCtor
     {
-        bool CanCreateInstance(Type type);
+        public int One { get; }
+        public string Two { get; }
 
-        object CreateRandomValue(Type type);
-
-        void CreateDualInstances(Type type, out object instance1, out object instance2);
+        public TestTypeNoDefaultCtor(int one, string two)
+        {
+            One = one;
+            Two = two;
+        }
     }
 }

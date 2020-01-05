@@ -9,7 +9,7 @@
 // portions of the Software.
 // 
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
-// LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN
 // NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
 // WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
 // SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -20,39 +20,55 @@ using Xunit;
 
 namespace NSimpleTester.Tests
 {
-    public class PropertyTesterTests
+    public class ClassTesterTests
     {
         [Fact]
         public void Constructor_creates_instance()
         {
-            Assert.IsType<PropertyTester>(new PropertyTester(new TestType()));
+            Assert.IsType<ClassTester>(new ClassTester(new TestType()));
         }
 
         [Fact]
         public void Constructor_throws_exception_if_subject_null()
         {
-            Assert.Throws<ArgumentNullException>(() => new PropertyTester(null));
+            Assert.Throws<ArgumentNullException>(() => new ClassTester(subject: null));
         }
 
         [Fact]
         public void Constructor_throws_exception_if_typeFactory_null()
         {
-            Assert.Throws<ArgumentNullException>(() => new PropertyTester(new TestType(), null));
+            Assert.Throws<ArgumentNullException>(() => new ClassTester(new TestType(), null));
+        }
+
+        [Fact]
+        public void TestConstructors_tests_constructors()
+        {
+            new ClassTester(new TestType()).TestConstructors(true);
+        }
+
+        [Fact]
+        public void IgnoredConstructors_skips_testing_constructor()
+        {
+            var sut = new ClassTester(new TestTypeWBadProperty());
+            sut.IgnoredConstructors.Add(new MethodSignature(typeof(ClassTester)));
+
+            sut.TestConstructors(true);
+        }
+
+        [Fact]
+        public void TestConstructorWithTestMappedProperties_throws_exception_if_property_not_set()
+        {
+            var sut = new ClassTester(new TestTypeWInvalidPropertySetter());
+
+            Assert.Throws<InvalidOperationException>(() => sut.TestConstructors(testMappedProperties: true));
         }
 
         [Fact]
         public void TestProperties_tests_properties()
         {
-            var sut = new PropertyTester(new TestType());
+            var sut = new ClassTester(new TestType());
 
             sut.TestProperties();
-        }
-
-        [Fact]
-        public void TestProperties_throws_error_when_cant_crete_property_type()
-        {
-            Assert.Throws<InvalidOperationException>(() => new PropertyTester(new TestTypeWBadProperty())
-                .TestProperties());
         }
 
         [Fact]
@@ -61,7 +77,7 @@ namespace NSimpleTester.Tests
             var mockTypeFactory = new Mock<ITypeFactory>();
             mockTypeFactory.Setup(factory => factory.CanCreateInstance(It.IsAny<Type>())).Returns(value: true);
             mockTypeFactory.Setup(factory => factory.CreateRandomValue(typeof(int))).Returns(value: -1);
-            var sut = new PropertyTester(new TestTypeWINotifyPropertyChanged(), mockTypeFactory.Object);
+            var sut = new ClassTester(new TestTypeWINotifyPropertyChanged(), mockTypeFactory.Object);
 
             Assert.Throws<InvalidOperationException>(() => sut.TestProperties());
         }
@@ -69,14 +85,14 @@ namespace NSimpleTester.Tests
         [Fact]
         public void TestProperties_throws_error_when_cant_set_property()
         {
-            Assert.Throws<InvalidOperationException>(() => new PropertyTester(new TestTypeWInvalidPropertySetter())
+            Assert.Throws<InvalidOperationException>(() => new ClassTester(new TestTypeWInvalidPropertySetter())
                 .TestProperties());
         }
 
         [Fact]
         public void IgnoredProperties_prevents_testing_specified_properties()
         {
-            var sut = new PropertyTester(new TestTypeWBadProperty());
+            var sut = new ClassTester(new TestTypeWBadProperty());
 
             sut.IgnoredProperties.Add("CantCreateInstanceProperty");
             sut.TestProperties();
@@ -85,13 +101,13 @@ namespace NSimpleTester.Tests
         [Fact]
         public void TestProperties_works_with_INotifyPropertyChanged()
         {
-            new PropertyTester(new TestTypeWINotifyPropertyChanged()).TestProperties();
+            new ClassTester(new TestTypeWINotifyPropertyChanged()).TestProperties();
         }
 
         [Fact]
         public void TestProperties_throws_error_when_INotifyPropertyChanged_not_configured_correctly()
         {
-            Assert.Throws<InvalidOperationException>(() => new PropertyTester(new TestTypeWBadINotifyPropertyChanged()).TestProperties());
+            Assert.Throws<InvalidOperationException>(() => new ClassTester(new TestTypeWBadINotifyPropertyChanged()).TestProperties());
         }
     }
 }

@@ -9,7 +9,7 @@
 // portions of the Software.
 // 
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
-// LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN
 // NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
 // WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
 // SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -38,14 +38,6 @@ namespace NSimpleTester.Tests
         }
 
         [Fact]
-        public void CanCreateInstance_returns_false_for_non_generic_reference_types_without_default_constructor()
-        {
-            var sut = new TypeFactory();
-
-            Assert.False(sut.CanCreateInstance(typeof(PropertyTester)));
-        }
-
-        [Fact]
         public void CanCreateInstance_returns_true_for_string()
         {
             var sut = new TypeFactory();
@@ -66,15 +58,15 @@ namespace NSimpleTester.Tests
         {
             var sut = new TypeFactory();
 
-            Assert.True(sut.CanCreateInstance(typeof(PropertyTester[])));
+            Assert.True(sut.CanCreateInstance(typeof(TestType)));
         }
 
         [Fact]
-        public void CanCreateInstance_returns_false_for_generic_type()
+        public void CanCreateInstance_returns_true_for_custom_class_without_default_ctor()
         {
             var sut = new TypeFactory();
 
-            Assert.False(sut.CanCreateInstance(createGenericType<PropertyTester>()));
+            Assert.True(sut.CanCreateInstance(typeof(TestTypeNoDefaultCtor)));
         }
 
         [Fact]
@@ -124,7 +116,6 @@ namespace NSimpleTester.Tests
 
             Assert.IsAssignableFrom<Type>(newValue);
         }
-        //!!! need to test all variations of generateNewType
 
         [Fact]
         public void CreateRandomValue_returns_timeSpan_when_type_is_timeSpan()
@@ -291,9 +282,9 @@ namespace NSimpleTester.Tests
         {
             var sut = new TypeFactory();
 
-            var newValue = sut.CreateRandomValue(typeof(TypeFactoryTests));
+            var newValue = sut.CreateRandomValue(typeof(TestTypeNoDefaultCtor));
 
-            Assert.IsAssignableFrom<TypeFactoryTests>(newValue);
+            Assert.IsAssignableFrom<TestTypeNoDefaultCtor>(newValue);
         }
 
         private static Type createGenericType<T>()

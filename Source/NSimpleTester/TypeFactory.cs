@@ -9,7 +9,7 @@
 // portions of the Software.
 // 
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
-// LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN
 // NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
 // WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
 // SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -17,6 +17,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -26,6 +27,7 @@ namespace NSimpleTester
 {
     public sealed class TypeFactory: ITypeFactory
     {
+        private readonly Dictionary<Type, MethodSignature> _typeHistory = new Dictionary<Type, MethodSignature>();
         private readonly Random _random = new Random();
 
         /// <summary>
@@ -36,11 +38,47 @@ namespace NSimpleTester
         /// <returns>true or false</returns>
         public bool CanCreateInstance(Type type)
         {
-            return (hasDefaultConstructor(type) 
-                    || type == typeof(string) 
-                    || type == typeof(Type) 
-                    || type.IsArray) 
-                && !type.IsGenericTypeDefinition;
+            // Have we already determined if we can create this type?
+            if (_typeHistory.ContainsKey(type))
+            { return _typeHistory[type] != null; }
+
+            var canCreate = !type.IsGenericTypeDefinition
+                            && (type == typeof(string) 
+                                || type == typeof(Type) 
+                                || type.IsArray && CanCreateInstance(type.GetElementType())
+                                || type.IsSubclassOf(typeof(ValueType))
+                                || type.GetConstructor(new Type[] { }) != null); // i.e. has a default constructor
+
+            if (canCreate)
+            { _typeHistory[type] = new MethodSignature(new Type[] {}); }
+            else if (!type.IsGenericTypeDefinition)
+            { canCreate = canCreateTypeFromNonDefaultConstructor(type); }
+            else
+            { _typeHistory[type] = null; }
+
+            return canCreate;
+        }
+
+        public void CreateDualInstances(Type type, out object instance1, out object instance2)
+        {
+            var methodSignature = _typeHistory[type];
+            var paramValues = createRandomParamValues(methodSignature);
+
+            instance1 = createComplexInstance(type, methodSignature, paramValues);
+            instance2 = createComplexInstance(type, methodSignature, paramValues);
+
+            var properties = type.GetProperties();
+            foreach (var property in properties)
+            {
+                var canSet = property.CanWrite;
+
+                if (!canSet || propertyIsIndexed(property) || !CanCreateInstance(property.PropertyType))
+                { continue; }
+
+                var propertyValue = CreateRandomValue(property.PropertyType);
+                property.SetValue(instance1, propertyValue, index: null);
+                property.SetValue(instance2, propertyValue, index: null);
+            }
         }
 
         /// <summary>
@@ -60,7 +98,6 @@ namespace NSimpleTester
                 {
                     var subType = type.GetGenericArguments()[0];
                     type = subType;
-
                     continue;
                 }
 
@@ -71,9 +108,8 @@ namespace NSimpleTester
                 }
 
                 if (type.IsEnum)
-                { 
+                {
                     var values = Enum.GetValues(type);
-
                     return values.GetValue(_random.Next(values.Length));
                 }
 
@@ -120,9 +156,68 @@ namespace NSimpleTester
                     case TypeCode.UInt64:
                         return Convert.ToUInt64(_random.Next(minValue: 0, int.MaxValue));
                     default:
-                        return Activator.CreateInstance(type);
+                        return createInstance(type);
                 }
             }
+        }
+
+        private object[] createRandomParamValues(MethodSignature methodSignature)
+        {
+            var paramValues = new object[methodSignature.Types.Length];
+
+            for (var i = 0; i < paramValues.Length; i++)
+            { paramValues[i] = CreateRandomValue(methodSignature.Types[i]); }
+
+            return paramValues;
+        }
+
+        private bool canCreateTypeFromNonDefaultConstructor(Type type)
+        {
+            var constructors = type.GetConstructors(BindingFlags.Public | BindingFlags.Instance);
+
+            foreach (var constructor in constructors)
+            {
+                var parameters = constructor.GetParameters();
+                var canCreateFromConstructor = parameters.All(parameter => CanCreateInstance(parameter.ParameterType));
+
+                // No need to look at additional constructors if we found one we can use
+                if (canCreateFromConstructor)
+                {
+                    _typeHistory[type] = new MethodSignature(parameters);
+                    return true;
+                }
+            }
+
+            _typeHistory[type] = null;
+            return false;
+        }
+
+        private object createInstance(Type type)
+        {
+            if (!_typeHistory.Any() || !_typeHistory.ContainsKey(type))
+            { CanCreateInstance(type); }
+
+            var methodSignature = _typeHistory[type];
+
+            // We should not have gotten here if methodSignature is null -- can't create instance
+            if (methodSignature is null)
+            { throw new InvalidOperationException("Cannot create instance of " + type); }
+
+            // Using default constructor?
+            return methodSignature.Types.Length == 0 
+                // Yes
+                ? Activator.CreateInstance(type) 
+                // No
+                : createComplexInstance(type, methodSignature);
+        }
+
+        private object createComplexInstance(Type type, MethodSignature methodSignature, object[] paramValues = null)
+        {
+            paramValues = paramValues ?? createRandomParamValues(methodSignature);
+            var constructor = getConstructorInfo(type, methodSignature);
+            var classInstance = constructor.Invoke(paramValues);
+
+            return classInstance;
         }
 
         /// <summary>
@@ -132,12 +227,9 @@ namespace NSimpleTester
         private static Type generateNewType()
         {
             var className = Path.GetFileNameWithoutExtension(Path.GetRandomFileName());
-            var codeToCompile = @"using System;
-                                     namespace NSimpleTester
-                                     { 
-                                        public class " + className + @" 
-                                        { } 
-                                     }";
+            if (!char.IsLetter(className[index: 0]))
+            { className = (char)(new Random().Next(minValue: 'A', maxValue: '[')) + className.Substring(startIndex: 1); }
+            var codeToCompile = @"using System; namespace NSimpleTester { public class " + className + @"{ }}";
 
             var syntaxTree = CSharpSyntaxTree.ParseText(codeToCompile);
             var assemblyName = Guid.NewGuid().ToString();
@@ -160,32 +252,24 @@ namespace NSimpleTester
                     var failures = emitResult.Diagnostics.Where(diagnostic =>
                         diagnostic.IsWarningAsError ||
                         diagnostic.Severity == DiagnosticSeverity.Error).ToArray();
-
-                    throw new InvalidOperationException(
-                        $"There were {failures.Count()} error(s) compiling the new type (first error shown only):{Environment.NewLine}{failures[0].GetMessage()}");
+                    throw new InvalidOperationException($"There were {failures.Length} error(s) compiling the new type (first error shown only):{Environment.NewLine}{failures[0].GetMessage()} ({codeToCompile} @ {failures[0].Location.GetLineSpan()})");
                 }
 
-                memoryStream.Seek(0, SeekOrigin.Begin);
+                memoryStream.Seek(offset: 0, SeekOrigin.Begin);
                 var assembly = AssemblyLoadContext.Default.LoadFromStream(memoryStream);
 
                 return assembly.GetType("NSimpleTester." + className);
             }
         }
 
-        /// <summary>
-        /// Indicates whether a type has a default public constructor, e.g. can be 'new-ed' up 
-        /// unlike System.String which cannot
-        /// </summary>
-        /// <param name="type">The type to test</param>
-        /// <returns>true or false</returns>
-        private static bool hasDefaultConstructor(Type type)
+        private static ConstructorInfo getConstructorInfo(Type type, MethodSignature methodSignature)
         {
-            // Is this a struct? If so - can be new-ed up.
-            if (type.IsSubclassOf(typeof(ValueType)))
-            { return true; }
+            var constructor = type.GetConstructor(methodSignature.Types);
 
-            // otherwise test for an actual default constructor
-            return type.GetConstructor(new Type[] { }) != null;
+            if (constructor is null)
+            { throw new InvalidOperationException($"Unable to find {type} constructor with method signature {methodSignature}."); }
+
+            return constructor;
         }
 
         /// <summary>
@@ -196,6 +280,11 @@ namespace NSimpleTester
         private static bool isNullableType(Type type)
         {
             return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
+        }
+
+        private bool propertyIsIndexed(PropertyInfo property)
+        {
+            return property.GetIndexParameters().Length > 0;
         }
     }
 }

@@ -14,40 +14,44 @@
 // WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
 // SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endregion
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
+using System;
+using System.Reflection;
+using Xunit;
 
 namespace NSimpleTester.Tests
 {
-    public class TestTypeWBadINotifyPropertyChanged : INotifyPropertyChanged
+    public class MethodSignatureTests
     {
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        private int _propertyOne;
-        public int PropertyOne
+        [Fact]
+        public void Simple_stuff_works()
         {
-            get => _propertyOne;
-            set
-            {
-                _propertyOne = value;
-                OnPropertyChanged();
-            }
+            var tester = new ClassTester(new MethodSignature(typeof(int), typeof(string)));
+            tester.IgnoredConstructors.Add(new MethodSignature(typeof(ParameterInfo[])));
+
+            tester.TestConstructors();
+            tester.TestProperties();
         }
 
-        private int _propertyTwo;
-        public int PropertyTwo
+        [Fact]
+        public void Equality_override_works()
         {
-            get => _propertyTwo;
-            set
-            {
-                _propertyTwo = value;
-                OnPropertyChanged("PropertyOne");
-            }
+            var item1 = new MethodSignature(typeof(int), typeof(string));
+            var item2 = new MethodSignature(typeof(int), typeof(string));
+            var item3 = new MethodSignature(typeof(DateTime), typeof(decimal));
+
+            EqualityTester.TestEqualObjects(item1, item2);
+            EqualityTester.TestUnequalObjects(item2, item3);
+            EqualityTester.TestAgainstNull(item3);
         }
 
-        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        [Fact]
+        public void ToString_creates_string()
         {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            var sut = new MethodSignature(typeof(TestTypeNoDefaultCtor).GetConstructors()[0].GetParameters());
+
+            var output = sut.ToString();
+
+            Assert.Contains("(System.Int32, System.String)", output);
         }
     }
 }

@@ -15,6 +15,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Source\NSimpleTester.Tests.ConstructorErrors\NSimpleTester.Tests.ConstructorErrors.csproj" />
+    <ProjectReference Include="..\..\Source\NSimpleTester.Tests.EqualityErrors\NSimpleTester.Tests.EqualityErrors.csproj" />
+    <ProjectReference Include="..\..\Source\NSimpleTester.Tests.PropertyErrors\NSimpleTester.Tests.PropertyErrors.csproj" />
     <ProjectReference Include="..\..\Source\NSimpleTester\NSimpleTester.csproj" />
   </ItemGroup>
 

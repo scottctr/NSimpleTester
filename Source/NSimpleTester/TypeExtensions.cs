@@ -15,15 +15,42 @@
 // SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endregion
 using System;
+using System.Linq;
+using System.Reflection;
 
 namespace NSimpleTester
 {
-    public interface ITypeFactory
+    public static class TypeExtensions
     {
-        bool CanCreateInstance(Type type);
+        public static MethodInfo GetEqualityOperator(this Type type)
+        {
+            return getOperator(type, "op_Equality");
+        }
 
-        object CreateRandomValue(Type type);
+        public static MethodInfo GetInequalityOperator(this Type type)
+        {
+            return getOperator(type, "op_Inequality");
+        }
 
-        void CreateDualInstances(Type type, out object instance1, out object instance2);
+        public static bool IsEqualsOverridden(this Type type)
+        {
+            if (type.IsEnum) { return false; }
+
+            var equalsMethod = type.GetMethods().Single(m => m.Name == "Equals");
+
+            return isOverride(equalsMethod);
+        }
+
+        private static MethodInfo getOperator(IReflect type, string methodName)
+        {
+            const BindingFlags bindingFlags = BindingFlags.Static | BindingFlags.Public;
+            var equalityOperator = type.GetMethod(methodName, bindingFlags);
+            return equalityOperator;
+        }
+
+        private static bool isOverride(MethodInfo methodInfo)
+        {
+            return methodInfo.GetBaseDefinition().DeclaringType != methodInfo.DeclaringType;
+        }
     }
 }

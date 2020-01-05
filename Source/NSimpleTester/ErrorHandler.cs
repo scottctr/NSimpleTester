@@ -1,4 +1,4 @@
-﻿#region Copyright (c) 2019 Scott L. Carter
+#region Copyright (c) 2019 Scott L. Carter
 // Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 // associated documentation files (the "Software"), to deal in the Software without restriction, including
 // without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
@@ -15,15 +15,36 @@
 // SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endregion
 using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
+[assembly: InternalsVisibleTo("NSimpleTester.Tests")]
 namespace NSimpleTester
 {
-    public interface ITypeFactory
+    internal static class ErrorHandler
     {
-        bool CanCreateInstance(Type type);
+        public static void Handle(ICollection<string> errorList, string errorMessage)
+        {
+            if (errorList is null)
+            { throw new InvalidOperationException(errorMessage); }
 
-        object CreateRandomValue(Type type);
+            errorList.Add(errorMessage);
+        }
 
-        void CreateDualInstances(Type type, out object instance1, out object instance2);
+        public static void Handle(ICollection<string> errorList, Exception ex)
+        {
+            if (errorList is null)
+            { throw ex; }
+
+            errorList.Add($"{ex.GetType().Name}: {ex.Message}");
+        }
+
+        public static bool SafeCall(Func<bool> test)
+        {
+            try
+            { return test.Invoke(); }
+            catch
+            { return false; }
+        }
     }
 }

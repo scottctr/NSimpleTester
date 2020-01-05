@@ -17,18 +17,10 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
-namespace NSimpleTester.Tests
+namespace NSimpleTester.Tests.PropertyErrors
 {
-    // ReSharper disable once InconsistentNaming
-    public class TestTypeWINotifyPropertyChanged : INotifyPropertyChanged
+    public class TestTypeWBadINotifyPropertyChanged : INotifyPropertyChanged
     {
-        protected bool Equals(TestTypeWINotifyPropertyChanged other) => _propertyOne == other._propertyOne
-                                                                     && _propertyTwo == other._propertyTwo;
-
-        public static bool operator ==(TestTypeWINotifyPropertyChanged left, TestTypeWINotifyPropertyChanged right) => Equals(left, right);
-
-        public static bool operator !=(TestTypeWINotifyPropertyChanged left, TestTypeWINotifyPropertyChanged right) => !Equals(left, right);
-
         public event PropertyChangedEventHandler PropertyChanged;
 
         private int _propertyOne;
@@ -45,45 +37,17 @@ namespace NSimpleTester.Tests
         private int _propertyTwo;
         public int PropertyTwo
         {
-            get => _propertyTwo;
+            //get => _propertyTwo;
             set
             {
                 _propertyTwo = value;
-                OnPropertyChanged();
+                OnPropertyChanged("PropertyOne");
             }
         }
 
         protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
-
-        public override bool Equals(object obj)
-        {
-            if (ReferenceEquals(null, obj))
-            {
-                return false;
-            }
-
-            if (ReferenceEquals(this, obj))
-            {
-                return true;
-            }
-
-            if (obj.GetType() != this.GetType())
-            {
-                return false;
-            }
-
-            return Equals((TestTypeWINotifyPropertyChanged) obj);
-        }
-
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                return (_propertyOne * 397) ^ _propertyTwo;
-            }
         }
     }
 }
