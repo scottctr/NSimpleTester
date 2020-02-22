@@ -21,6 +21,9 @@ using System.Reflection;
 
 namespace NSimpleTester
 {
+    /// <summary>
+    /// Class to test all classes in an assembly.
+    /// </summary>
     public class AssemblyTester
     {
         private readonly List<Type> _types = new List<Type>();
@@ -37,9 +40,18 @@ namespace NSimpleTester
         private bool _excludeEqualityTests;
         private bool _excludePropertyTests;
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="assembly">The assembly to test.</param>
         public AssemblyTester(Assembly assembly) : this(assembly, new TypeFactory())
         { }
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="assembly">The assembly to test.</param>
+        /// <param name="typeFactory">Class used to create instances of types to test.</param>
         public AssemblyTester(Assembly assembly, ITypeFactory typeFactory)
         {
             if (assembly is null)
@@ -60,19 +72,27 @@ namespace NSimpleTester
         /// Prevents executing tests on a class.
         /// </summary>
         /// <param name="className">The name of the class to exclude from testing.</param>
+        /// <param name="isFullName">Is the <paramref name="className"/> a class name with the namespace.</param>
         /// <returns></returns>
-        public AssemblyTester ExcludeClass(string className)
+        public AssemblyTester ExcludeClass(string className, bool isFullName = false)
         {
-            var classType = findClass(className);
+            var classType = findClass(className, isFullName);
 
             _excludedClasses.Add(classType);
 
             return this;
         }
 
-        public AssemblyTester ExcludeConstructor(string className, MethodSignature parameters)
+        /// <summary>
+        /// Prevent a specific constructor from being tested.
+        /// </summary>
+        /// <param name="className">The name of the class with the constructor to exclude.</param>
+        /// <param name="parameters">Signature of the constructor to ignore.</param>
+        /// <param name="isFullClassName">Is the <paramref name="className"/> a class name with its namespace?</param>
+        /// <returns></returns>
+        public AssemblyTester ExcludeConstructor(string className, MethodSignature parameters, bool isFullClassName = false)
         {
-            var classType = findClass(className);
+            var classType = findClass(className, isFullClassName);
 
             if (!_excludedConstructors.TryGetValue(classType, out var constructorList))
             { _excludedConstructors.Add(classType, new List<MethodSignature> { parameters }); }
@@ -82,6 +102,10 @@ namespace NSimpleTester
             return this;
         }
 
+        /// <summary>
+        /// Excludes running constructor tests on all types in the assembly.
+        /// </summary>
+        /// <returns></returns>
         public AssemblyTester ExcludeConstructorTests()
         {
             _excludeConstructorTests = true;
@@ -89,6 +113,10 @@ namespace NSimpleTester
             return this;
         }
 
+        /// <summary>
+        /// Excludes running equality tests on all types in the assembly.
+        /// </summary>
+        /// <returns></returns>
         public AssemblyTester ExcludeEqualityTests()
         {
             _excludeEqualityTests = true;
@@ -96,9 +124,15 @@ namespace NSimpleTester
             return this;
         }
 
-        public AssemblyTester ExcludeEqualityTests(string className)
+        /// <summary>
+        /// Excludes executing equality tests for a specific type.
+        /// </summary>
+        /// <param name="className">The name of the class to exclude.</param>
+        /// <param name="isFullName">Is the <paramref name="className"/> a full class name with its namespace.</param>
+        /// <returns></returns>
+        public AssemblyTester ExcludeEqualityTests(string className, bool isFullName = false)
         {
-            var classType = findClass(className);
+            var classType = findClass(className, isFullName);
 
             if (!_excludedEqualityTests.Contains(classType))
             { _excludedEqualityTests.Add(classType); }
@@ -106,9 +140,15 @@ namespace NSimpleTester
             return this;
         }
 
-        public AssemblyTester ExcludeMappedProperties(string className)
+        /// <summary>
+        /// Excludes testing the mapping of constructor parameters to properties of a specific type.
+        /// </summary>
+        /// <param name="className">The name of the class to exclude.</param>
+        /// <param name="isFullName">Is the <paramref name="className"/> a full class name with its namespace.</param>
+        /// <returns></returns>
+        public AssemblyTester ExcludeMappedProperties(string className, bool isFullName = false)
         {
-            var classType = findClass(className);
+            var classType = findClass(className, isFullName);
 
             if (!_excludedMappedProperties.Contains(classType))
             { _excludedMappedProperties.Add(classType); }
@@ -121,10 +161,11 @@ namespace NSimpleTester
         /// </summary>
         /// <param name="className">Name of the class with the property to exclude.</param>
         /// <param name="propertyName">Name of the property to exclude.</param>
+        /// <param name="isFullClassName">Is the <paramref name="className"/> a full class name with its namespace.</param>
         /// <returns></returns>
-        public AssemblyTester ExcludeProperty(string className, string propertyName)
+        public AssemblyTester ExcludeProperty(string className, string propertyName, bool isFullClassName = false)
         {
-            var classType = findClass(className);
+            var classType = findClass(className, isFullClassName);
 
             if (!_excludedProperties.TryGetValue(classType, out var propertyList))
             { _excludedProperties.Add(classType, new List<string> { propertyName }); }
@@ -158,9 +199,9 @@ namespace NSimpleTester
             return errorList is null || !errorList.Any();
         }
 
-        private Type findClass(string className)
+        private Type findClass(string className, bool isFullName)
         {
-            var classType = _types.FirstOrDefault(t => string.Equals(t.Name, className, StringComparison.CurrentCultureIgnoreCase));
+            var classType = _types.FirstOrDefault(t => string.Equals(isFullName ? t.FullName : t.Name, className, StringComparison.CurrentCultureIgnoreCase));
 
             if (classType is null)
             { throw new ArgumentException($"Unable to find type '{className}'."); }

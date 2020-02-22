@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <Copyright>Copyright © 2019</Copyright>
-    <Version>1.2.0</Version>
+    <Version>1.2.1</Version>
     <Authors>Scott L Carter</Authors>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/scottctr/NSimpleTester</PackageProjectUrl>
