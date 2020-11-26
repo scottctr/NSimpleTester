@@ -45,7 +45,7 @@ namespace NSimpleTester
             var canCreate = !type.IsGenericTypeDefinition
                             && (type == typeof(string) 
                                 || type == typeof(Type) 
-                                || type.IsArray && CanCreateInstance(type.GetElementType())
+                                || (type.IsArray && CanCreateInstance(type.GetElementType()))
                                 || type.IsSubclassOf(typeof(ValueType))
                                 || type.GetConstructor(new Type[] { }) != null); // i.e. has a default constructor
 
@@ -213,7 +213,7 @@ namespace NSimpleTester
 
         private object createComplexInstance(Type type, MethodSignature methodSignature, object[] paramValues = null)
         {
-            paramValues = paramValues ?? createRandomParamValues(methodSignature);
+            paramValues ??= createRandomParamValues(methodSignature);
             var constructor = getConstructorInfo(type, methodSignature);
             var classInstance = constructor.Invoke(paramValues);
 
@@ -243,23 +243,21 @@ namespace NSimpleTester
                 references: references,
                 options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
-            using (var memoryStream = new MemoryStream())
+            using var memoryStream = new MemoryStream();
+            var emitResult = compilation.Emit(memoryStream);
+
+            if (!emitResult.Success)
             {
-                var emitResult = compilation.Emit(memoryStream);
-
-                if (!emitResult.Success)
-                {
-                    var failures = emitResult.Diagnostics.Where(diagnostic =>
-                        diagnostic.IsWarningAsError ||
-                        diagnostic.Severity == DiagnosticSeverity.Error).ToArray();
-                    throw new InvalidOperationException($"There were {failures.Length} error(s) compiling the new type (first error shown only):{Environment.NewLine}{failures[0].GetMessage()} ({codeToCompile} @ {failures[0].Location.GetLineSpan()})");
-                }
-
-                memoryStream.Seek(offset: 0, SeekOrigin.Begin);
-                var assembly = AssemblyLoadContext.Default.LoadFromStream(memoryStream);
-
-                return assembly.GetType("NSimpleTester." + className);
+                var failures = emitResult.Diagnostics.Where(diagnostic =>
+                    diagnostic.IsWarningAsError ||
+                    diagnostic.Severity == DiagnosticSeverity.Error).ToArray();
+                throw new InvalidOperationException($"There were {failures.Length} error(s) compiling the new type (first error shown only):{Environment.NewLine}{failures[0].GetMessage()} ({codeToCompile} @ {failures[0].Location.GetLineSpan()})");
             }
+
+            memoryStream.Seek(offset: 0, SeekOrigin.Begin);
+            var assembly = AssemblyLoadContext.Default.LoadFromStream(memoryStream);
+
+            return assembly.GetType("NSimpleTester." + className);
         }
 
         private static ConstructorInfo getConstructorInfo(Type type, MethodSignature methodSignature)

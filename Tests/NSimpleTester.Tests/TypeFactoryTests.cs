@@ -248,7 +248,7 @@ namespace NSimpleTester.Tests
         }
 
         [Fact]
-        public void CreateRandomValue_returns_unint16_when_type_is_unint16()
+        public void CreateRandomValue_returns_uint16_when_type_is_uint16()
         {
             var sut = new TypeFactory();
 
@@ -258,7 +258,7 @@ namespace NSimpleTester.Tests
         }
 
         [Fact]
-        public void CreateRandomValue_returns_unint32_when_type_is_unint32()
+        public void CreateRandomValue_returns_uint32_when_type_is_uint32()
         {
             var sut = new TypeFactory();
 
@@ -268,7 +268,7 @@ namespace NSimpleTester.Tests
         }
 
         [Fact]
-        public void CreateRandomValue_returns_unint64_when_type_is_unint64()
+        public void CreateRandomValue_returns_uint64_when_type_is_uint64()
         {
             var sut = new TypeFactory();
 
