@@ -1,9 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
-    <Copyright>Copyright © 2019</Copyright>
-    <Version>1.2.2</Version>
+    <TargetFramework>netstandard2.0</TargetFramework>
+	  <AnalysisLevel>5.0</AnalysisLevel>
+	  <LangVersion>latest</LangVersion>
+	  <Copyright>Copyright © 2019</Copyright>
+    <Version>1.2.3</Version>
     <Authors>Scott L Carter</Authors>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/scottctr/NSimpleTester</PackageProjectUrl>
